@@ -131,13 +131,15 @@ app.put("/update", (req, res) => {
   const phone = req.body.phone;
   const company = req.body.company;
   const biography = req.body.biography;
+  const role = req.body.role;
+
   const id = req.body.id;
 
   console.log(id, website, age, phone, company, biography);
 
   connection.query(
-    "UPDATE users SET website = ?, company = ?, biography = ?  WHERE id = ?",
-    [website, company, biography, id]
+    "UPDATE users SET website = ?, company = ?, biography = ?, role =?  WHERE id = ?",
+    [website, company, biography, role, id]
     // (error, result) => {
     //   if (error) {
     //     console.log(error);
