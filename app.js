@@ -9,6 +9,8 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 
+const jwt = require('jsonwebtoken')
+
 const app = express();
 
 // app.use(bodyParser.json());
@@ -84,7 +86,31 @@ app.post("/register", (req, res) => {
   });
 });
 
+const veryJWT = (req, res, next) => {
+  const token = req.headers['x-access-token']
+  if (!token) {
+    res.send("Yo, we need a token, please give it to us next time");
+  } else {
+    jwt.verify(token, 'jwtSecret', (err, decoded) => {
+      if (err) {
+        res.json({
+          auth: false, 
+          message: 'You failed to authenticate'
+        })
+      } else {
+        req.userId = decoded.id;
+        next();
+      }
+    })
+  }
+}
+
+app.get("/isUserAuth", veryJWT, (req, res) => {
+  res.send("You are authenticated, congrats.");
+});
+
 app.get("/login", (req, res) => {
+  console.log(req.session.user);
   if (req.session.user) {
     res.send({ loggedIn: true, user: req.session.user });
   } else {
@@ -107,9 +133,21 @@ app.post("/login", (req, res) => {
       if (result.length > 0) {
         bcrypt.compare(password, result[0].password, (err, response) => {
           if (response) {
+            // First grab the ID of the user, we receive an array and we select the first one
+            const id = result[0].id;
+            // We create the token and pass the id and the secret (in a .env varible)
+            const token = jwt.sign({ id }, "jwtsecret", {
+              // expires in 5 minutes
+              expiresIn: 300,
+            });
+            // Creates a session and send the result
             req.session.user = result;
-            console.log(req.session.user);
-            res.send(result);
+
+            res.json({
+              auth: true,
+              token: token,
+              result: result
+            });
           } else {
             res.send({ message: "Wrong username/password combination" });
           }
@@ -120,6 +158,8 @@ app.post("/login", (req, res) => {
     }
   );
 });
+
+
 
 app.post("/add", () => {
   res.sendO("New user");
